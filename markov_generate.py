@@ -16,6 +16,7 @@ def main():
         for message in Markov.tokenize_words([m[2] for m in data if m[1] == user]):
             markov.train(message)
 
+    # combine the corpus with one from Snow Crash to get a cool effect
     #entries = open("Snow_Crash.txt", "rb").read().decode("UTF-8").split("\n")
     #matcher = re.compile(Markov.PATTERN, re.IGNORECASE)
     #for message in (matcher.findall(m) for m in entries):
