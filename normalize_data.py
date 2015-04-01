@@ -5,16 +5,23 @@ import json, sys
 
 users = {
     "fbid:100001608518631": "Anthony Zhang",
-    # ADD MORE USERS HERE AS NECESSARY - map the Facebook user ID to human-readable names
+    # ADD MORE USERS HERE AS NECESSARY - map Facebook user IDs to names (find users by ID at `http://graph.facebook.com/<ID_GOES_HERE>`, like `http://graph.facebook.com/100001608518631`)
 }
 
-def get_attachment(attach):
-    url = attach["url"]
-    if url.startswith("/ajax/mercury/attachments/photo/view"):
-        url = parse_qs(urlparse(url).query)["uri"][0]
-    elif url.startswith("/"):
-        url = "https://facebook.com" + url
-    return [attach["attach_type"] + ":" + url]
+def get_attachments(attachments):
+    result = []
+    for attach in attachments:
+        if not isinstance(attach, dict): continue
+        url = attach["url"]
+        if attach["attach_type"] == "photo": # replace photo preview with actual photo
+            if "hires_url" in attach: # photo is directly available
+                url = attach["hires_url"]
+            elif url.startswith("/ajax/mercury/attachments/photo/view"):
+                url = parse_qs(urlparse(url).query)["uri"][0]
+        elif url.startswith("/"): # fix absolute URLs with the hostname
+            url = "https://facebook.com" + url
+        result.append(attach["attach_type"] + ":" + url)
+    return result
 
 def get_body(entry):
     if "body" in entry:
@@ -32,13 +39,12 @@ def get_user(author):
 
 def get_entry(entry):
     result = [
-        entry["timestamp"], # unix timestamp
+        entry["timestamp"], # unix millisecond timestamp
         get_user(entry["author"]), # message author
         get_body(entry), # message value
-        [get_attachment(attach) for attach in entry["attachments"] if isinstance(attach, dict)] if "attachments" in entry else [],
+        get_attachments(entry["attachments"]) if "attachments" in entry else [], # attachments
+        entry["coordinates"] if "coordinates" in entry else None, # GPS coordinates
     ]
-    #if "coordinates" in entry: # GPS coordinates
-        #result.append(entry["coordinates"])
     return json.dumps(result)
 
 data = json.load(sys.stdin)
