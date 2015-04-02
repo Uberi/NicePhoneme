@@ -5,10 +5,13 @@ import random
 from collections import defaultdict
 
 def main():
-    user = sys.argv[1] if len(sys.argv) > 1 else None
+    try: count = int(sys.argv[1], 0) if len(sys.argv) > 1 else 1
+    except ValueError: count = 1
+    user = sys.argv[2] if len(sys.argv) > 2 else None
+    
+    # train a Markov model on the given chat data
     data = json.load(sys.stdin)
-
-    markov = Markov(2)
+    markov = Markov(2) # Markov model with 2 word look-behind
     if user is None:
         for message in Markov.tokenize_words([m[2] for m in data]):
             markov.train(message)
@@ -22,7 +25,7 @@ def main():
     #for message in (matcher.findall(m) for m in entries):
         #markov.train([m.lower() for m in message])
 
-    result = "\n".join(markov.speak() for i in range(5000))
+    result = "\n".join(markov.speak() for i in range(count))
     sys.stdout.write(string_normalize(result))
 
 class Markov:
@@ -45,13 +48,13 @@ class Markov:
         # find word chain counts as a dictionary mapping words to dictionaries mapping words to amount of times they appear after the first word
         current_key = ()
         for i, m in enumerate(message): # loop through every index except the highest one
-            self.chain[current_key][m] += importance # update the Markov chain with current word
+            self.chain[current_key][m] += importance # update the Markov model with current word
             self.counts[current_key] += importance
             
             if i < self.lookbehind_length: current_key += (m,) # add current word to key if just starting
             else: current_key = current_key[1:] + (m,) # shift word onto key if inside message
 
-        self.chain[current_key][None] += importance # update the Markov chain with end of message
+        self.chain[current_key][None] += importance # update the Markov model with end of message
         self.counts[current_key] += importance
 
     def speak(self):

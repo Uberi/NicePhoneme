@@ -8,19 +8,24 @@ users = {
     # ADD MORE USERS HERE AS NECESSARY - map Facebook user IDs to names (find users by ID at `http://graph.facebook.com/<ID_GOES_HERE>`, like `http://graph.facebook.com/100001608518631`)
 }
 
-def get_attachments(attachments):
+def get_attachments(entry):
     result = []
-    for attach in attachments:
-        if not isinstance(attach, dict): continue
-        url = attach["url"]
-        if attach["attach_type"] == "photo": # replace photo preview with actual photo
-            if "hires_url" in attach: # photo is directly available
-                url = attach["hires_url"]
-            elif url.startswith("/ajax/mercury/attachments/photo/view"):
-                url = parse_qs(urlparse(url).query)["uri"][0]
-        elif url.startswith("/"): # fix absolute URLs with the hostname
-            url = "https://facebook.com" + url
-        result.append(attach["attach_type"] + ":" + url)
+    if "coordinates" in entry and entry["coordinates"] is not None:
+        coordinate = entry["coordinates"]
+        if "accuracy" in coordinate: result.append("location:{},{} ~{}m".format(coordinate["latitude"], coordinate["longitude"], coordinate["accuracy"]))
+        else: result.append("location:{},{}".format(coordinate["latitude"], coordinate["longitude"]))
+    if "attachments" in entry:
+        for attach in entry["attachments"]:
+            if not isinstance(attach, dict): continue
+            url = attach["url"]
+            if attach["attach_type"] == "photo": # replace photo preview with actual photo
+                if "hires_url" in attach: # photo is directly available
+                    url = attach["hires_url"]
+                elif url.startswith("/ajax/mercury/attachments/photo/view"):
+                    url = parse_qs(urlparse(url).query)["uri"][0]
+            elif url.startswith("/"): # fix absolute URLs with the hostname
+                url = "https://facebook.com" + url
+            result.append(attach["attach_type"] + ":" + url)
     return result
 
 def get_body(entry):
@@ -42,8 +47,7 @@ def get_entry(entry):
         entry["timestamp"], # unix millisecond timestamp
         get_user(entry["author"]), # message author
         get_body(entry), # message value
-        get_attachments(entry["attachments"]) if "attachments" in entry else [], # attachments
-        entry["coordinates"] if "coordinates" in entry else None, # GPS coordinates
+        get_attachments(entry), # attachments
     ]
     return json.dumps(result)
 

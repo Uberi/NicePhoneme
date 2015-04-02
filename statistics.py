@@ -57,14 +57,16 @@ result = "\n".join([k + ":\t" + str(v) for k, v in frequencies])
 print("Smilies per user:\n" + result + "\n")
 
 # get sentiments
-from textblob import TextBlob
-users = defaultdict(float)
-for entry in data:
-    sentiment = TextBlob(entry[2]).sentiment
-    users[entry[1]] += sentiment.polarity * (1 - sentiment.subjectivity)
-sentiments = sorted([(k, v / user_messages[k]) for k, v in users.items()], key=lambda x: -x[1])
-result = "\n".join([k + ":\t" + str(v) for k, v in sentiments])
-print("User positivity:\n" + result + "\n")
+try:
+    from textblob import TextBlob
+    users = defaultdict(float)
+    for entry in data:
+        sentiment = TextBlob(entry[2]).sentiment
+        users[entry[1]] += sentiment.polarity * (1 - sentiment.subjectivity)
+    sentiments = sorted([(k, v / user_messages[k]) for k, v in users.items()], key=lambda x: -x[1])
+    result = "\n".join([k + ":\t" + str(v) for k, v in sentiments])
+    print("User positivity:\n" + result + "\n")
+except ImportError: pass # ignore this if TextBlob isn't installed
 
 # get word frequencies
 words = defaultdict(int)

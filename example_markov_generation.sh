@@ -3,8 +3,8 @@
 NAME="Anthony Zhang"
 
 echo "GENERATING ALL..."
-python3 markov_generate.py < data/normalized_data.json > "data/results.txt"
+python3 markov_generate.py 5000 < data/normalized_data.json > "data/results.txt"
 echo "DONE: results saved to \"data/results-$NAME.txt\""
 echo "GENERATING FOR \"$NAME\"..."
-python3 markov_generate.py "$NAME" < data/normalized_data.json > "data/results-$NAME.txt"
+python3 markov_generate.py 5000 "$NAME" < data/normalized_data.json > "data/results-$NAME.txt"
 echo "DONE: results saved to \"data/results-$NAME.txt\""
