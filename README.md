@@ -17,26 +17,28 @@ Workflow
 
 The first thing to do is to actually get the data, from Facebook. Although Facebook provides a data dump, this is very incomplete - rich media in chats is not preserved, group chats don't show up at all, and the chat history is very limited.
 
-NicePhoneme has a Facebook Chat importer that can download all the messages from a Facebook chat. This is the `message_importer_group.py` script.
+NicePhoneme has a Facebook Chat importer that can download all the messages from a Facebook chat. This is the `message_downloader.py` script.
 
-The typical workflow for downloading all messages from a Facebook group conversation into a JSON file dump looks something like the following:
+The typical workflow for downloading all messages from a Facebook conversation into a JSON file dump looks something like the following:
 
-1. Open **Google Chrome** or **Chromium** to the [https://www.facebook.com/messages/](https://www.facebook.com/messages/), and navigate to the group conversation.
+1. Open **Google Chrome** or **Chromium** to the [https://www.facebook.com/messages/](https://www.facebook.com/messages/), and navigate to the desired conversation.
 2. Press **F12** or **right-click and select "Inspect Element"** to open the Developer Tools.
 3. In the developer tools, go to the Network tab. Refresh the webpage.
-4. Scroll down the long list of requests and select any request to "thread\_info.php" under "/ajax/mercury" - the path [/ajax/mercury/thread_info.php](/ajax/mercury/thread_info.php).
+4. Scroll down the long list of requests and select any request to `thread_info.php` at `/ajax/mercury` - the path `/ajax/mercury/thread_info.php`.
 5. Press Control + A to select all, and then copy (Control + C).
-6. Open `get_messages_group.py` in a text editor.
+6. Open `message_downloader.py` in a text editor.
 7. Replace everything on the lines between `request_info = """` on line 8 and `"""` on line 41 (but not those lines themselves) with the clipboard - paste the previously copied value overwriting the value there previously.
-8. Run the script in the command line using Python 3, redirecting the output to a file: `python3 get_messages_group.py > SOME_OUTPUT_FILE.json`. The script will use your current Facebook session in Chrome to download chat messages.
+8. Run the script in the command line using Python 3, redirecting the output to a file: `python3 message_downloader.py > SOME_OUTPUT_FILE.json`. The script will use your current Facebook session in Chrome to download chat messages.
 
-See the following for reference:
+This script works for personal (one-on-one) conversations and group conversations. Here is an example of a `/ajax/mercury/thread_info.php` request for a group conversation:
 
 ![Screenshot of desired request](facebook_request.png)
 
-See `example_download_group_messages.sh` for an example script invocation.
+Basically, open the Developer Tools console to that request, select all, and copy/paste that into the specified location in `message_downloader.py`.
 
-The data dump will now be stored in `SOME_OUTPUT_FILE.json`. It is basically a JSON array of message objects, and has the following form:
+See `example_download_messages.sh` for an example script invocation.
+
+If you followed the steps above, the data dump will now be stored in `SOME_OUTPUT_FILE.json`. It is basically a JSON array of message objects (one per line), and has the following form:
 
     [
     {"attachments": [], "forward_count": 0, "other_user_fbid": null, "thread_id": "id.244208602353745", "timestamp_relative": "Sat", "is_filtered_content": false, "is_unread": false, "author": "fbid:100001608518631", "author_email": "100001608518631@facebook.com", "coordinates": null, "source": "source:chat:web", "forward_message_ids": [], "has_attachment": false, "folder": "inbox", "subject": null, "message_id": "mid.1417251353723:a10628342dc4aecf23", "html_body": null, "body": "what message body", "source_tags": ["source:chat"], "timestamp": 1419660501532, "timestamp_datetime": "Saturday 1:08am", "threading_id": null, "ranges": [], "timestamp_time_passed": 1, "is_forward": false, "raw_attachments": null, "action_type": "ma-type:user-generated-message", "is_spoof_warning": false, "action_id": "1417251353723", "timestamp_absolute": "Saturday", "thread_fbid": "244208602353745"},

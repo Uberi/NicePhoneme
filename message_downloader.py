@@ -19,13 +19,13 @@ content-type:application/x-www-form-urlencoded
 cookie:STUFF
 dnt:1
 origin:https://www.facebook.com
-referer:https://www.facebook.com/messages/conversation-STUFF
+referer:https://www.facebook.com/messages/STUFF
 user-agent:STUFF
 Form Data
 view source
 view URL encoded
-messages[thread_fbids][STUFF][offset]:21
-messages[thread_fbids][STUFF][limit]:20
+messages[STUFF][STUFF][offset]:21
+messages[STUFF][STUFF][limit]:20
 :
 client:web_messenger
 __user:STUFF
@@ -48,63 +48,67 @@ if len(sys.argv) > 1:
         print("Invalid message offset - message offset must be an integer", file=sys.stderr)
         sys.exit(1)
 
+# find the conversation form data prefix
+match = re.search(r"^messages\[thread_fbids\]\[([^\]]+)\]", request_info, re.MULTILINE)
+if match is None: # not a group message, probably a personal conversation
+    match = re.search(r"^messages\[user_ids\]\[([^\]]+)\]", request_info, re.MULTILINE)
+    assert match is not None, "Conversation/user ID not found"
+MESSAGE_FIELD_PREFIX = match.group(0)
+
 # find the request variables in the request data
-match = re.search(r"^messages\[thread_fbids\]\[([^\]]+)", request_info, re.MULTILINE)
-assert match is not None, "Cookie not found"
-conversation_ID = match.group(1)
 match = re.search(r"^cookie:(.*)", request_info, re.MULTILINE)
 assert match is not None, "Cookie not found"
-request_cookie = match.group(1)
+REQUEST_COOKIE = match.group(1)
 match = re.search(r"^__user:(.*)", request_info, re.MULTILINE)
 assert match is not None, "User ID not found"
-request_user = match.group(1)
+REQUEST_USER = match.group(1)
 match = re.search(r"^__a:(.*)", request_info, re.MULTILINE)
 assert match is not None, "Request __a value not found"
-request_a = match.group(1)
+REQUEST_A = match.group(1)
 match = re.search(r"^__dyn:(.*)", request_info, re.MULTILINE)
 assert match is not None, "Request __dyn value not found"
-request_dyn = match.group(1)
+REQUEST_DYN = match.group(1)
 match = re.search(r"^__req:(.*)", request_info, re.MULTILINE)
 assert match is not None, "Request __req value not found"
-request_req = match.group(1)
+REQUEST_REQ = match.group(1)
 match = re.search(r"^fb_dtsg:(.*)", request_info, re.MULTILINE)
 assert match is not None, "Request fb_dtsg value not found"
-request_fb_dtsg = match.group(1)
+REQUEST_FB_DTSG = match.group(1)
 match = re.search(r"^ttstamp:(.*)", request_info, re.MULTILINE)
 assert match is not None, "Request ttstamp value not found"
-request_timestamp = match.group(1)
+REQUEST_TTSTAMP = match.group(1)
 match = re.search(r"^__rev:(.*)", request_info, re.MULTILINE)
 assert match is not None, "Request __rev value not found"
-request_rev = match.group(1)
+REQUEST_REV = match.group(1)
 
-def get_messages(conversation_ID, message_offset = 0, messages_per_request = 2000):
+def get_messages(message_offset = 0, messages_per_request = 2000):
     headers = {
         "origin": "https://www.facebook.com",
         "accept": "*/*",
         "accept-encoding": "gzip, deflate",
         "accept-language": "en-US,en;q=0.8",
         "content-type": "application/x-www-form-urlencoded",
-        "cookie": request_cookie,
+        "cookie": REQUEST_COOKIE,
         "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36",
         "accept": "*/*",
         "dnt": "1",
-        "referer": "https://www.facebook.com/messages/conversation-" + conversation_ID,
+        "referer": "https://www.facebook.com/messages/",
     }
     try:
         while True:
             print("Getting messages {}-{}".format(message_offset, messages_per_request + message_offset), file=sys.stderr)
             
             form_data = urllib.parse.urlencode({
-                "messages[thread_fbids][" + conversation_ID + "][offset]": str(message_offset), 
-                "messages[thread_fbids][" + conversation_ID + "][limit]": str(messages_per_request), 
+                MESSAGE_FIELD_PREFIX + "[offset]": str(message_offset), 
+                MESSAGE_FIELD_PREFIX + "[limit]": str(messages_per_request), 
                 "client": "web_messenger",
-                "__user": request_user,
-                "__a": request_a,
-                "__dyn": request_dyn,
-                "__req": request_req,
-                "fb_dtsg": request_fb_dtsg,
-                "ttstamp": request_timestamp,
-                "__rev": request_rev,
+                "__user": REQUEST_USER,
+                "__a": REQUEST_A,
+                "__dyn": REQUEST_DYN,
+                "__req": REQUEST_REQ,
+                "fb_dtsg": REQUEST_FB_DTSG,
+                "ttstamp": REQUEST_TTSTAMP,
+                "__rev": REQUEST_REV,
             }).encode("UTF-8")
             request = urllib.request.Request("https://www.facebook.com/ajax/mercury/thread_info.php", form_data, headers)
             response_value = urllib.request.urlopen(request).read() # read the GZIP-compressed response value
@@ -130,7 +134,7 @@ if __name__ == "__main__":
     sys.stdout.write("[\n")
     try:
         first = True
-        for chunk in get_messages(conversation_ID, message_offset):
+        for chunk in get_messages(message_offset):
             for message in chunk:
                 if first: first = False
                 else: sys.stdout.write(",\n")
