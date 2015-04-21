@@ -26,10 +26,11 @@ The typical workflow for downloading all messages from a Facebook conversation i
 2. Press **F12** or **right-click and select "Inspect Element"** to open the Developer Tools.
 3. In the developer tools, go to the Network tab. Refresh the webpage.
 4. Scroll down the long list of requests and select any request to `thread_info.php` at `/ajax/mercury` - the path `/ajax/mercury/thread_info.php`.
-5. Press Control + A to select all, and then copy (Control + C).
-6. Open `message_downloader.py` in a text editor.
-7. Replace everything on the lines between `request_info = """` on line 8 and `"""` on line 41 (but not those lines themselves) with the clipboard - paste the previously copied value overwriting the value there previously.
-8. Run the script in the command line using Python 3, redirecting the output to a file: `python3 message_downloader.py > SOME_OUTPUT_FILE.json`. The script will use your current Facebook session in Chrome to download chat messages.
+5. Select the `Headers` tab in the right pane.
+6. Press Control + A to select all, and then copy (Control + C).
+7. Open `message_downloader.py` in a text editor.
+8. Replace everything on the lines between `request_info = """` on line 8 and `"""` on line 41 (but not those lines themselves) with the clipboard - paste the previously copied value overwriting the value there previously.
+9. Run the script in the command line using Python 3, redirecting the output to a file: `python3 message_downloader.py > SOME_OUTPUT_FILE.json`. The script will use your current Facebook session in Chrome to download chat messages.
 
 This script works for personal (one-on-one) conversations and group conversations. Here is an example of a `/ajax/mercury/thread_info.php` request for a group conversation:
 
@@ -59,9 +60,9 @@ Notes about running the script (Step 8):
 
 Right now, the data is rather unwieldy to work with, since the message entries contain a lot of noise and not-very-useful fields. We will now perform normalization on the data to get it into a more readable and workable form. This can be done using the `normalize_data.py` script.
 
-;wip: author names
-
 Simply run the script with the downloaded Facebook chat JSON dump as input, and it will output the normalized data. For example, running `python3 normalize_data.py < SOME_DATA_DUMP.json > SOME_OUTPUT_FILE.json` in the terminal will read `SOME_DATA_DUMP.json`, and output the normalized version to `SOME_OUTPUT_FILE.json`.
+
+If there are two or more users with the exact same name, it is often helpful to give each user a different nickname. To do this, simply edit the `user_aliases` dictionary at the top of the script source code. This is a mapping between Facebook user identifiers of the form `fbid:<POSITIVE_INTEGER>` and names, or between names and other names. Names will be retrieved via the [Facebook Graph API](https://developers.facebook.com/docs/graph-api).
 
 See `example_normalize_data.sh` for an example script invocation.
 

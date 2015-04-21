@@ -1,12 +1,30 @@
 #!/usr/bin/env python3
 
 from urllib.parse import urlparse, parse_qs
+from urllib.request import urlopen
 import json, sys
 
-users = {
+user_aliases = {
     "fbid:100001608518631": "Anthony Zhang",
-    # ADD MORE USERS HERE AS NECESSARY - map Facebook user IDs to names (find users by ID at `http://graph.facebook.com/<ID_GOES_HERE>`, like `http://graph.facebook.com/100001608518631`)
+    "Mr. RealPerson": "Mr. RealPerson's Nickname",
+    # ADD MORE USERS HERE AS NECESSARY (OPTIONAL)
+    # map Facebook user IDs to names, or names to other names
+    # you can find users by ID at `http://graph.facebook.com/<ID_GOES_HERE>`, like `http://graph.facebook.com/100001608518631`)
 }
+
+def get_user(user_identifier):
+    if user_identifier in user_aliases: return user_aliases[user_identifier] # explicit user ID alias
+    if user_identifier.startswith("fbid:"): # facebook ID, look up using the Facebook Graph API
+        try:
+            response_text = urlopen("http://graph.facebook.com/{}".format(user_identifier[5:])).read().decode("UTF-8")
+            name = json.loads(response_text)["name"]
+            if name in user_aliases: name = user_aliases[name] # explicit user name alias
+            print("SUCCESSFULLY RETRIEVED NAME FOR USER \"{}\"".format(user_identifier, e), file=sys.stderr)
+            user_aliases[user_identifier] = name # cache the proper name of the user
+            return name
+        except Exception as e:
+            print("COULD NOT GET NAME FOR USER \"{}\": {}".format(user_identifier, e), file=sys.stderr)
+    return user_identifier # other type of Facebook identifier, just return it verbatim
 
 def get_attachments(entry):
     result = []
@@ -29,18 +47,9 @@ def get_attachments(entry):
     return result
 
 def get_body(entry):
-    if "body" in entry:
-        return entry["body"]
-    elif "log_message_body" in entry:
-        return entry["log_message_body"]
-    else:
-        raise Exception("Bad entry:\n" + str(entry))
-
-def get_user(author):
-    if author not in users:
-        sys.stderr.write("UNKNOWN AUTHOR \"{}\"\n".format(author))
-        return author
-    return users[author]
+    if "body" in entry: return entry["body"]
+    if "log_message_body" in entry: return entry["log_message_body"]
+    print("BAD ENTRY \"{}\"\n".format(entry), file=sys.stderr)
 
 def get_entry(entry):
     result = [
