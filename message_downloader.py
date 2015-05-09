@@ -3,6 +3,7 @@
 
 import urllib.parse, urllib.request
 import gzip, os, sys, io, json, time, re
+from datetime import datetime
 
 # request data
 request_info = """
@@ -120,6 +121,8 @@ def get_messages(message_offset = 0, messages_per_request = 2000):
             try:
                 json_data = json.loads(messages_data)
                 current_messages = json_data["payload"]["actions"] # messages sorted ascending by timestamp
+                latest_message_time = datetime.fromtimestamp(current_messages[-1]["timestamp"] / 1000).strftime("%c")
+                print("Oldest encountered message timestamp:", latest_message_time, file=sys.stderr)
                 yield list(reversed(current_messages))
             except:
                 print("Error retrieving messages. Retrying in 20 seconds. Data:", file=sys.stderr)
