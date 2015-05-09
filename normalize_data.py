@@ -19,7 +19,7 @@ def get_user(user_identifier):
             response_text = urlopen("http://graph.facebook.com/{}".format(user_identifier[5:])).read().decode("UTF-8")
             name = json.loads(response_text)["name"]
             if name in user_aliases: name = user_aliases[name] # explicit user name alias
-            print("SUCCESSFULLY RETRIEVED NAME FOR USER \"{}\"".format(user_identifier, e), file=sys.stderr)
+            print("SUCCESSFULLY RETRIEVED NAME FOR USER \"{}\"".format(user_identifier), file=sys.stderr)
             user_aliases[user_identifier] = name # cache the proper name of the user
             return name
         except Exception as e:
@@ -35,6 +35,7 @@ def get_attachments(entry):
     if "attachments" in entry:
         for attach in entry["attachments"]:
             if not isinstance(attach, dict): continue
+            if attach["attach_type"] == "error": continue
             url = attach["url"]
             if attach["attach_type"] == "photo": # replace photo preview with actual photo
                 if "hires_url" in attach: # photo is directly available
