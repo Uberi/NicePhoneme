@@ -19,7 +19,7 @@ def get_user(user_identifier):
             response_text = urlopen("http://graph.facebook.com/{}".format(user_identifier[5:])).read().decode("UTF-8")
             name = json.loads(response_text)["name"]
             if name in user_aliases: name = user_aliases[name] # explicit user name alias
-            print("SUCCESSFULLY RETRIEVED NAME FOR USER \"{}\"".format(user_identifier), file=sys.stderr)
+            print("SUCCESSFULLY RETRIEVED NAME FOR USER \"{}\": {}".format(user_identifier, name), file=sys.stderr)
             user_aliases[user_identifier] = name # cache the proper name of the user
             return name
         except Exception as e:
@@ -42,7 +42,10 @@ def get_attachments(entry):
                     url = attach["hires_url"]
                 elif url.startswith("/ajax/mercury/attachments/photo/view"):
                     url = parse_qs(urlparse(url).query)["uri"][0]
-            elif url.startswith("/"): # fix absolute URLs with the hostname
+            elif attach["attach_type"] == "share" and "share" in attach: # replace photo preview with actual photo
+                if attach["share"]["uri"] is None: continue # attachment removed or don't have permission to see
+                url = attach["share"]["uri"]
+            elif isinstance(url, str) and url.startswith("/"): # fix absolute URLs with the hostname
                 url = "https://facebook.com" + url
             result.append(attach["attach_type"] + ":" + url)
     return result
